@@ -1,4 +1,3 @@
-# LitServe Deployment Guide: Benchmarking Classifiers and LLMs with OpenAI API Compatibility
 
 # Deploying and Benchmarking Classifier with LitServe 🚀
 
@@ -136,8 +135,10 @@ Using `test_client.py` to get predictions for a test image:
 
 ![benchmark results without batching](utils/images/benchmark_results.png)
 
-<video src="utils/videos/withoutBatching.mov" title="Benchmarking Without Batching" controls width="500"></video>
-<!-- <video src="demo.mov" width="500" controls title="Demo Video"></video> -->
+<!-- <video src="utils/videos/withoutBatching.mov" title="Benchmarking Without Batching" controls width="500"></video> -->
+
+[![Watch the video](utils/images/benchmark_results.png)](utils/videos/withoutBatching.mov)
+
 
 ## Configuration Options
 
@@ -156,7 +157,9 @@ server = ls.LitServer(
 
 ![benchmark results with batching](utils/images/benchmark_results_enable_batching.png)
 
-<video src="utils/videos/enable_batching.mov" title="Benchmarking With Batching" controls width="500"></video>
+<!-- <video src="utils/videos/enable_batching.mov" title="Benchmarking With Batching" controls width="500"></video> -->
+
+[![Watch the video](utils/images/benchmark_results_enable_batching.png)](utils/videos/enable_batching.mov)
 
 Key batching parameters:
 - `max_batch_size`: Maximum number of requests in a batch (default: 64)
@@ -183,7 +186,10 @@ Benchmarking
 
 ![benchmark results with workers](utils/images/benchmark_results_workers.png)
 
-<video src="utils/videos/workers.mov" title="Benchmarking With Workers" controls width="500"></video>
+<!-- <video src="utils/videos/workers.mov" title="Benchmarking With Workers" controls width="500"></video> -->
+
+[![Watch the video](utils/images/benchmark_results_workers.png)](utils/videos/workers.mov)
+
 
 Worker guidelines:
 - Start with `workers_per_device = num_cpu_cores / 2`
@@ -201,7 +207,9 @@ precision = torch.bfloat16
 
 ![benchmark results with half precision](utils/images/benchmark_results_half_precision.png)
 
-<video src="utils/videos/half_precision.mov" title="Benchmarking With HAlf Precision" controls width="500"></video>
+<!-- <video src="utils/videos/half_precision.mov" title="Benchmarking With HAlf Precision" controls width="500"></video> -->
+
+[![Watch the video](utils/images/benchmark_results_half_precision.png)](utils/videos/half_precision.mov)
 
 Precision options:
 - `half_precision`: Use FP16 for faster inference
