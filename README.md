@@ -75,17 +75,126 @@ python aws-litserve/benchmark.py
 ```  
 
 
-## Server Code Highlights 🔍  
+## Scripts   
 
-### Server Initialization   
+server.py  file
+
 ```python
-api = ImageClassifierAPI()
-server = ls.LitServer(
-    api,
-    accelerator="gpu",
-)
-server.run(port=8000)
+import torch
+import timm
+from PIL import Image
+import io
+import litserve as ls
+import base64
+import boto3
+import rootutils
+
+from timm_classifier import TimmClassifier  
+
+class ImageClassifierAPI(ls.LitAPI):
+    def setup(self, device):
+        """Initialize the model and necessary components"""
+        self.device = device
+        # Load model from S3
+        s3 = boto3.client('s3')
+        bucket_name = 'mlops-aws'
+        model_key = 'model/cat_dog_model.ckpt'
+        
+        # Download the model file from S3
+        model_file = 'cat_dog_model.ckpt'
+        # s3.download_file(bucket_name, model_key, model_file)
+        
+        # Load the model from checkpoint
+        self.model = TimmClassifier.load_from_checkpoint(model_file)  # Load model from checkpoint
+        self.model = self.model.to(device)
+        self.model.eval()
+
+        # Get model specific transforms
+        data_config = timm.data.resolve_model_data_config(self.model)
+        self.transforms = timm.data.create_transform(**data_config, is_training=False)
+
+        # Load class labels
+        self.labels = ["Cat", "Dog"]
+
+    def decode_request(self, request):
+        """Convert base64 encoded image to tensor"""
+        image_bytes = request.get("image")
+        if not image_bytes:
+            raise ValueError("No image data provided")
+        
+        # Decode base64 string to bytes
+        img_bytes = base64.b64decode(image_bytes)
+        
+        # Convert bytes to PIL Image
+        image = Image.open(io.BytesIO(img_bytes))
+        # Convert to tensor and move to device
+        tensor = self.transforms(image).unsqueeze(0).to(self.device)
+        return tensor
+
+    @torch.no_grad()
+    def predict(self, x):
+        outputs = self.model(x)
+        probabilities = torch.nn.functional.softmax(outputs, dim=1)
+        return probabilities
+
+    def encode_response(self, output):
+        """Convert model output to API response"""
+        # Get top 5 predictions
+        probs, indices = torch.topk(output[0], k=5)
+        
+        return {
+            "predictions": [
+                {
+                    "label": self.labels[idx.item()],
+                    "probability": prob.item()
+                }
+                for prob, idx in zip(probs, indices)
+            ]
+        }
+
+if __name__ == "__main__":
+    api = ImageClassifierAPI()
+    server = ls.LitServer(
+        api,
+        accelerator="gpu",
+    )
+    server.run(port=8000)
 ```
+test_client.py
+
+```python
+import requests
+from urllib.request import urlopen
+import base64
+import boto3  
+
+def test_single_image():
+    # Get test image from S3
+    s3_bucket = 'mlops-aws'  
+    s3_key = 'input-images/sample-iamge.jpg'  # Replace with the path to your image in S3
+    s3 = boto3.client('s3')
+    img_data = s3.get_object(Bucket=s3_bucket, Key=s3_key)['Body'].read()  # Fetch image from S3
+    
+    # Convert to base64 string
+    img_bytes = base64.b64encode(img_data).decode('utf-8')
+    
+    # Send request
+    response = requests.post(
+        "<http://localhost:8000/predict>",
+        json={"image": img_bytes}  # Send as JSON instead of files
+    )
+    
+    if response.status_code == 200:
+        predictions = response.json()["predictions"]
+        print("\\nTop 5 Predictions:")
+        for pred in predictions:
+            print(f"{pred['label']}: {pred['probability']:.2%}")
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+
+```
+
 
 ### Image Processing Workflow  
 - **Decode**: Convert base64 images to tensors.  
@@ -137,7 +246,9 @@ Using `test_client.py` to get predictions for a test image:
 
 <!-- <video src="utils/videos/withoutBatching.mov" title="Benchmarking Without Batching" controls width="500"></video> -->
 
-[![Watch the video](utils/images/benchmark_results.png)](utils/videos/withoutBatching.mov)
+<div align="center">
+  <img src="utils/videos/withoutBatching.gif" alt="Benchmarking Without Batching">
+</div>
 
 
 ## Configuration Options
@@ -159,7 +270,9 @@ server = ls.LitServer(
 
 <!-- <video src="utils/videos/enable_batching.mov" title="Benchmarking With Batching" controls width="500"></video> -->
 
-[![Watch the video](utils/images/benchmark_results_enable_batching.png)](utils/videos/enable_batching.mov)
+<div align="center">
+  <img src="utils/videos/enable_batching.gif" alt="Benchmarking With Batching">
+</div>
 
 Key batching parameters:
 - `max_batch_size`: Maximum number of requests in a batch (default: 64)
@@ -186,10 +299,9 @@ Benchmarking
 
 ![benchmark results with workers](utils/images/benchmark_results_workers.png)
 
-<!-- <video src="utils/videos/workers.mov" title="Benchmarking With Workers" controls width="500"></video> -->
-
-[![Watch the video](utils/images/benchmark_results_workers.png)](utils/videos/workers.mov)
-
+<div align="center">
+  <img src="utils/videos/workers.gif" alt="Benchmarking With Workers">
+</div>
 
 Worker guidelines:
 - Start with `workers_per_device = num_cpu_cores / 2`
@@ -209,7 +321,9 @@ precision = torch.bfloat16
 
 <!-- <video src="utils/videos/half_precision.mov" title="Benchmarking With HAlf Precision" controls width="500"></video> -->
 
-[![Watch the video](utils/images/benchmark_results_half_precision.png)](utils/videos/half_precision.mov)
+<div align="center">
+  <img src="utils/videos/half_precision.gif" alt="Benchmarking With HAlf Precision">
+</div>
 
 Precision options:
 - `half_precision`: Use FP16 for faster inference
@@ -411,8 +525,6 @@ def run_benchmarks():
 #### Sample Benchmark Results
 
 After running the benchmark script:
-
-[Download and Watch](utils/videos/half_precision.mov)
 
 ![Benchmark Results](utils/images/llm_benchmark.png)
 
