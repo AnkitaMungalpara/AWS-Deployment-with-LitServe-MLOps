@@ -59,6 +59,7 @@ LitServer is the core of LitServe, managing:
   ```  
 
  **Verify GPU availability** using `nvidia-smi`:  
+
 ![nvidia-smi](utils/images/nvidia-smi.png)  
 
 
@@ -82,10 +83,7 @@ python aws-litserve/benchmark.py
 api = ImageClassifierAPI()
 server = ls.LitServer(
     api,
-    accelerator="gpu",  # Use GPU for acceleration
-    max_batch_size=64,  # Batch up to 64 requests
-    batch_timeout=0.01,  # Timeout for batching
-    workers_per_device=4  # Number of workers per device
+    accelerator="gpu",
 )
 server.run(port=8000)
 ```
@@ -123,15 +121,73 @@ for concurrency in concurrency_levels:
 ## Sample Outputs 
 
 ### Server Logs  
+
 ![server](utils/images/server1.png)
 
 ### Test Client Predictions  
 Using `test_client.py` to get predictions for a test image:  
+
 ![test-client](utils/images/test_client.png)  
 
 ### Benchmarking Results  
+
 ![benchmark without batching](utils/images/benchmark1.png)
 
 ![benchmark results without batching](utils/images/benchmark_results.png)
 
 
+## Configuration Options
+
+### 1. Batching Configuration
+Batching allows processing multiple requests simultaneously for improved throughput:
+
+```python
+server = ls.LitServer(
+    api,
+    accelerator="gpu",
+    max_batch_size=64,     # Maximum batch size
+    batch_timeout=0.01,    # Wait time for batch collection
+)
+```
+![benchmark with batching](utils/images/benchmark2.png)
+
+![benchmark results with batching](utils/images/benchmark_results_enable_batching.png)
+
+Key batching parameters:
+- `max_batch_size`: Maximum number of requests in a batch (default: 64)
+- `batch_timeout`: Maximum wait time for batch collection (default: 0.01s)
+- `batching`: Enable/disable batching feature
+
+### 2. Worker Configuration
+Multiple workers handle concurrent requests efficiently:
+
+```python
+server = ls.LitServer(
+    api,
+    accelerator="gpu",
+    workers_per_device=4,  # Number of worker processes
+)
+```
+![benchmark with workers](utils/images/benchmark3.png)
+
+![benchmark results with workers](utils/images/benchmark_results_workers.png)
+
+Worker guidelines:
+- Start with `workers_per_device = num_cpu_cores / 2`
+- Monitor CPU/GPU utilization to optimize
+- Consider memory constraints when setting max_workers
+
+### 3. Precision Settings
+Control model precision for performance/accuracy trade-off:
+
+```python
+# Define precision - can be changed to torch.float16 or torch.bfloat16
+precision = torch.bfloat16
+```
+![benchmark with precision](utils/images/benchmark4.png)
+
+![benchmark results with half precision](utils/images/benchmark_results_half_precision.png)
+
+Precision options:
+- `half_precision`: Use FP16 for faster inference
+- `mixed_precision`: Combine FP32 and FP16 for optimal performance
