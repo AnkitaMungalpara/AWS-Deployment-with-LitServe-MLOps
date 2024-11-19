@@ -168,6 +168,12 @@ server = ls.LitServer(
     workers_per_device=4,  # Number of worker processes
 )
 ```
+Server Running 4 Workers 
+
+![server with workers](utils/images/server_workers.png)
+
+Benchmarking
+
 ![benchmark with workers](utils/images/benchmark3.png)
 
 ![benchmark results with workers](utils/images/benchmark_results_workers.png)
@@ -191,3 +197,76 @@ precision = torch.bfloat16
 Precision options:
 - `half_precision`: Use FP16 for faster inference
 - `mixed_precision`: Combine FP32 and FP16 for optimal performance
+
+# Deploying an LLM with OpenAI API Spec
+
+This section covers deploying a local LLM using the OpenAI API specification, which allows for easy integration with existing tools and clients.
+
+### Installation
+
+First, install the required dependencies:
+```bash
+pip install transformers accelerate
+```
+
+### Server Implementation
+
+Create `llm_server.py` to run the LLM server:
+```python
+# See provided llm_server.py code
+```
+
+The server implementation:
+- Uses <code>SmolLM2-1.7B-Instruct</code> model from HuggingFace
+- Implements OpenAI-compatible chat completion API
+- Supports streaming responses
+- Uses <code>BFloat16</code> for efficient inference
+- Utilizes PyTorch compilation for improved performance
+
+### Client Usage
+
+Create `llm_client.py` to interact with the server:
+```python
+from openai import OpenAI
+
+# Initialize the OpenAI client
+client = OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="dummy-key"
+)
+
+# Create a streaming chat completion
+stream = client.chat.completions.create(
+    model="smol-lm",  # Model name doesn't matter
+    messages=[{"role": "user", "content": "What is the capital of Australia?"}],
+    stream=True,
+)
+
+# Print the streaming response
+for chunk in stream:
+    if chunk.choices[0].delta.content is not None:
+        print(chunk.choices[0].delta.content, end="")
+print()  # New line at the end
+```
+![Benchmark Results](utils/images/llm_client.png)
+
+### Performance Benchmarking
+
+Create `llm_benchmark.py` to measure server performance:
+```python
+# See provided llm_benchmark.py code
+```
+
+#### Sample Benchmark Results
+
+After running the benchmark script:
+
+
+![Benchmark Results](utils/images/llm_benchmark.png)
+![Benchmark Results](utils/images/llm_benchmark_results.png)
+
+The benchmark:
+- Measures actual tokens per second vs theoretical maximum
+- Calculates efficiency percentage
+
+
