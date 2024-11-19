@@ -412,6 +412,7 @@ def run_benchmarks():
 
 After running the benchmark script:
 
+[Download and Watch](utils/videos/half_precision.mov)
 
 ![Benchmark Results](utils/images/llm_benchmark.png)
 
