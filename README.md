@@ -1,3 +1,4 @@
+# LitServe Deployment Guide: Benchmarking Classifiers and LLMs with OpenAI API Compatibility
 
 # Deploying and Benchmarking Classifier with LitServe 🚀
 
@@ -7,7 +8,6 @@ LitServe is a lightweight framework designed for serving machine learning models
 ```bash
 pip install litserve
 ```
-
 
 ## Why LitServe? 🤔  
 
@@ -125,6 +125,7 @@ for concurrency in concurrency_levels:
 ![server](utils/images/server1.png)
 
 ### Test Client Predictions  
+
 Using `test_client.py` to get predictions for a test image:  
 
 ![test-client](utils/images/test_client.png)  
@@ -135,6 +136,8 @@ Using `test_client.py` to get predictions for a test image:
 
 ![benchmark results without batching](utils/images/benchmark_results.png)
 
+<video src="utils/videos/withoutBatching.mov" title="Benchmarking Without Batching" controls width="500"></video>
+<!-- <video src="demo.mov" width="500" controls title="Demo Video"></video> -->
 
 ## Configuration Options
 
@@ -152,6 +155,8 @@ server = ls.LitServer(
 ![benchmark with batching](utils/images/benchmark2.png)
 
 ![benchmark results with batching](utils/images/benchmark_results_enable_batching.png)
+
+<video src="utils/videos/enable_batching.mov" title="Benchmarking With Batching" controls width="500"></video>
 
 Key batching parameters:
 - `max_batch_size`: Maximum number of requests in a batch (default: 64)
@@ -178,6 +183,8 @@ Benchmarking
 
 ![benchmark results with workers](utils/images/benchmark_results_workers.png)
 
+<video src="utils/videos/workers.mov" title="Benchmarking With Workers" controls width="500"></video>
+
 Worker guidelines:
 - Start with `workers_per_device = num_cpu_cores / 2`
 - Monitor CPU/GPU utilization to optimize
@@ -193,6 +200,8 @@ precision = torch.bfloat16
 ![benchmark with precision](utils/images/benchmark4.png)
 
 ![benchmark results with half precision](utils/images/benchmark_results_half_precision.png)
+
+<video src="utils/videos/half_precision.mov" title="Benchmarking With HAlf Precision" controls width="500"></video>
 
 Precision options:
 - `half_precision`: Use FP16 for faster inference
@@ -263,6 +272,7 @@ After running the benchmark script:
 
 
 ![Benchmark Results](utils/images/llm_benchmark.png)
+
 ![Benchmark Results](utils/images/llm_benchmark_results.png)
 
 The benchmark:
